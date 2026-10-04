@@ -243,100 +243,63 @@ svg {{ max-width: 100%; height: auto; }}
 
 
 def slides(n, figs) -> list[str]:
-    cr, ref, ours = n["committee_rates"], n["ref"], n["ours_rates"]
+    cr, ref = n["committee_rates"], n["ref"]
     mon_o, mon_b = n["monitor"]["ours"], n["monitor"]["base"]
     bar_key, gap_key = "merit bar of granted, Centre - Eloignee", "grant-rate gap Centre - Eloignee"
     d = n["decomposition"]
     f = n["fair"]
+    share = lambda k: f"{100 * d[k] / n['gap']:.0f} %"  # noqa: E731
     return [
         f"""<div class="kicker">ÉquiAlgo · Hackathon Génie et Informatique 2026 · équipe Persona</div>
         <h1 style="margin-top:150px">Le mérite n'a pas<br>de code postal.</h1>
         <p style="font-size:26px">Diagnostiquer, corriger et surveiller le biais régional d'un modèle d'octroi de bourses.</p>""",
 
-        f"""<div class="kicker">1 · Le constat</div><h2>Un modèle exact à 88 %… parce qu'il copie un comité biaisé</h2>
-        <div class="row"><div class="col">
-          <div class="hero c">{pct(cr['Centre'], 0)}</div><div class="hero-label">d'octroi à Montréal et dans la Capitale-Nationale</div>
-          <div class="hero r" style="margin-top:34px">{pct(cr['Eloignee'], 0)}</div><div class="hero-label">au Bas-Saint-Laurent, sur la Côte-Nord et en Gaspésie</div>
-        </div><div class="col"><ul>
-          <li>Cote R moyenne : <strong>{num(n['r_centre'], 1)}</strong> contre <strong>{num(n['r_remote'], 1)}</strong>. Ces 0,7 point n'expliquent qu'une petite partie de l'écart de 21 points.</li>
-          <li>L'« exactitude » se mesure contre les décisions passées : le modèle est récompensé quand il <strong>reproduit</strong> le comité.</li>
-          <li>Notre mandat : mesurer ce qui relève du mérite et ce qui relève du biais.</li>
-        </ul></div></div>""",
+        f"""<div class="kicker">1 · Diagnostic</div><h2>À dossier égal, vivre en région coûte {num(n['remote_pen'], 1)} point de cote R</h2>
+        <div class="row"><div class="col" style="flex:0.75">
+          <div class="hero c">{pct(cr['Centre'], 0)}</div><div class="hero-label">d'octroi à Montréal et à Québec</div>
+          <div class="hero r" style="margin-top:28px">{pct(cr['Eloignee'], 0)}</div><div class="hero-label">dans les régions éloignées</div>
+          <p style="margin-top:28px">Le modèle « exact à 88 % » <strong>copie ce comité</strong>.</p>
+        </div><div class="col">{figs['decomp']}
+          <p style="font-size:18px">L'écart de 21 points : <strong>{share('Pénalité régionale directe')}</strong> de pénalité régionale, <strong>{share('Avantage aux revenus élevés')}</strong> d'avantage aux revenus élevés, <strong>{share('Mérite (cote R, heures)')}</strong> de mérite.</p>
+        </div></div>""",
 
-        f"""<div class="kicker">2 · Diagnostic</div><h2>À dossier égal, vivre en région coûte {num(n['remote_pen'], 1)} point de cote R</h2>
-        <div class="row"><div class="col" style="flex:1.15">{figs['decomp']}
-          <p style="font-size:16px">Décomposition contrefactuelle d'une régression logistique des 10 000 décisions du comité.</p></div>
-        <div class="col"><ul>
-          <li><strong>{100 * d['Pénalité régionale directe'] / n['gap']:.0f} %</strong> de l'écart : une pénalité régionale directe, identique pour les trois régions.</li>
-          <li><strong>{100 * d['Avantage aux revenus élevés'] / n['gap']:.0f} %</strong> : un avantage aux ménages aisés (+{num(n['income_double'], 1)} point de cote R quand le revenu double), plus nombreux dans les centres.</li>
-          <li>Seulement <strong>{100 * d['Mérite (cote R, heures)'] / n['gap']:.0f} %</strong> : le mérite.</li>
-        </ul></div></div>""",
-
-        f"""<div class="kicker">3 · Le piège</div><h2>Retirer la colonne région ne retire pas le biais</h2>
+        f"""<div class="kicker">2 · Le piège</div><h2>Retirer la colonne région ne retire pas le biais</h2>
         <div class="row"><div class="col">{figs['proxies']}</div><div class="col"><ul>
-          <li>Sans la colonne région, l'écart de parité passe à peine de 0,188 à 0,181 ; sans le code postal non plus, à 0,173. <strong>Les proxys portent la région.</strong></li>
-          <li>Égaliser l'égalité des chances <strong>contre les décisions du comité</strong> revient à s'aligner sur le juge biaisé : ExpGrad et ThresholdOptimizer-EO gardent un écart de {num(f['gap_lo'])} à {num(f['gap_hi'])} face au mérite. Le second accorde {pct(f['to_eo_rate'], 0)} : <strong>hors enveloppe</strong>.</li>
-          <li>ThresholdOptimizer-parité ferme l'écart ({num(abs(f['to_dp_gap']))}), mais avec <strong>un seuil différent par région</strong> au moment de décider, et une concordance plus faible ({num(f['to_dp_agree'], 3)} contre {num(f['ours_agree'], 3)}).</li>
+          <li>Sans région ni code postal, l'écart de parité passe à peine de 0,188 à 0,173 : <strong>les proxys portent la région.</strong></li>
+          <li>fairlearn appliqué aux décisions du comité <strong>s'aligne sur le juge biaisé</strong> : écart de {num(f['gap_lo'])} à {num(f['gap_hi'])} face au mérite, et {pct(f['to_eo_rate'], 0)} d'octroi (hors enveloppe) pour ThresholdOptimizer-EO.</li>
         </ul></div></div>""",
 
-        f"""<div class="kicker">4 · Notre solution</div><h2>Séparer le mérite du biais, puis ne garder que le mérite</h2>
-        <div class="row"><div class="col"><div class="box">
-          <p style="margin:0 0 6px">Modèle du comité, en points de cote R :</p>
-          <div class="formula">cote R + {num(n['hours_w'], 3)} × heures</div>
-          <p style="margin:0">− {num(n['remote_pen'], 1)} si région éloignée + avantage au revenu élevé + bruit</p></div>
-          <div class="box" style="margin-top:18px"><p style="margin:0 0 6px">Décision corrigée :</p>
-          <div class="formula" style="font-size:27px">Top 40 % de <span class="c">cote R + {num(n['hours_w'], 3)} × heures</span></div>
-          <p style="margin:0">Ni région, ni code postal, ni revenu, ni distance.</p></div></div>
-        <div class="col"><ul>
-          <li><strong>Un seul paramètre estimé</strong> (le poids des heures, IC&nbsp;95&nbsp;% ≈ [0,13&nbsp;;&nbsp;0,16]) : pas de surapprentissage.</li>
-          <li><strong>Explicable</strong> : chaque candidat·e peut recalculer son score.</li>
-          <li><strong>Budget garanti</strong> : 40,0 % exactement, vérifié dans le code.</li>
-          <li>Un boosting (de type XGBoost) entraîné sur les décisions reste aussi biaisé (écart ≈ 0,28) : <strong>le problème est la cible, pas la puissance du modèle.</strong></li>
-        </ul></div></div>""",
+        f"""<div class="kicker">3 · Solution et preuve</div><h2>Ne garder que le mérite, pour tout le monde</h2>
+        <div class="row"><div class="col" style="flex:0.85"><div class="box">
+          <div class="formula" style="font-size:23px">Top 40 % de <span class="c">cote R + {num(n['hours_w'], 3)} × heures</span></div>
+          <p style="margin:0">Ni région, ni code postal, ni revenu, ni distance.</p></div>
+          <ul style="margin-top:18px">
+            <li><strong>Un seul paramètre</strong>, une règle que chacun·e peut recalculer.</li>
+            <li><strong>{pct(n['p01']['hx_accuracy'], 2)}</strong> d'exactitude contre le mérite réel, avec 3 soumissions et une règle écrite d'avance.</li>
+            <li>Un XGBoost entraîné sur les décisions reproduit le biais : <strong>le problème est la cible.</strong></li>
+          </ul></div>
+        <div class="col">{figs['rates']}</div></div>""",
 
-        f"""<div class="kicker">5 · Front de Pareto</div><h2>Contre le mérite, l'équité ne coûte rien</h2>
+        f"""<div class="kicker">4 · Front de Pareto</div><h2>Contre le mérite, l'équité ne coûte rien</h2>
         {figs['pareto']}
-        <p style="font-size:17px;margin-top:6px">λ balaie la part du biais du comité conservée (1 = comité, 0 = mérite seul). Moyenne de 5 découpages. À gauche, l'équité semble coûter 4 points d'exactitude. À droite, contre un mérite (simulé), elle améliore les deux axes.</p>""",
+        <p style="font-size:17px;margin-top:6px">λ = part du biais du comité conservée (1 = comité, 0 = mérite seul), moyenne de 5 découpages. Contre le comité, l'équité semble coûter 4 points ; contre un mérite, elle améliore les deux axes.</p>""",
 
-        f"""<div class="kicker">6 · La preuve</div><h2>Le mérite réel est réparti également ; le comité, non</h2>
-        <div class="row"><div class="col" style="flex:1.2">{figs['rates']}</div>
-        <div class="col"><ul>
-          <li>3 soumissions HxBuddy agrégées, selon une <strong>règle écrite avant</strong> de soumettre : mérite réel à <strong>{pct(ref['rate_centre'])}</strong> au centre, <strong>{pct(ref['rate_remote'])}</strong> en région.</li>
-          <li>Notre soumission : <strong>{pct(n['p01']['hx_accuracy'], 2)}</strong> d'exactitude, F1 macro <strong>{pct(n['p01']['hx_f1_macro'], 1)}</strong>, contre ≈ 89 % estimé pour le modèle de production.</li>
-          <li>Écart d'égalité des chances : <strong>≈ 0,00</strong> si l'étalon est H1, <strong>≤ 0,03</strong> sous les variantes compatibles avec les sondes (estimations), contre <strong>0,270</strong> au départ.</li>
-        </ul></div></div>""",
-
-        f"""<div class="kicker">7 · Gouvernance</div><h2>Surveiller à chaque cycle, sans attendre les étiquettes</h2>
-        <div class="row"><div class="col" style="flex:1.25"><table>
-          <tr><th>Indicateur (monitoring.py)</th><th>Seuil</th><th>Production</th><th>Nous</th></tr>
+        f"""<div class="kicker">5 · Gouvernance</div><h2>Surveiller à chaque cycle, sans attendre les étiquettes</h2>
+        <div class="row"><div class="col" style="flex:1.15"><table>
+          <tr><th>monitoring.py</th><th>Seuil</th><th>Production</th><th>Nous</th></tr>
           <tr><td>Écart de taux Centre − Éloignée</td><td>0,05</td><td>{num(mon_b[gap_key])} <span class="tag bad">alerte</span></td><td>{num(mon_o[gap_key])} <span class="tag good">ok</span></td></tr>
           <tr><td>Étendue des taux sur 5 régions</td><td>0,08</td><td>{num(mon_b['grant-rate range over 5 regions'])} <span class="tag bad">alerte</span></td><td>{num(mon_o['grant-rate range over 5 regions'])} <span class="tag good">ok</span></td></tr>
           <tr><td>Barre de mérite, Centre − Éloignée</td><td>0,5 pt</td><td>{num(mon_b[bar_key])} <span class="tag bad">alerte</span></td><td>{num(mon_o[bar_key])} <span class="tag good">ok</span></td></tr>
-          <tr><td>Taux d'octroi global</td><td>36–44 %</td><td>{pct(mon_b['grant rate (budget)'])}</td><td>{pct(mon_o['grant rate (budget)'])}</td></tr>
-          <tr><td>Dérive des variables (PSI)</td><td>0,2</td><td colspan="2">suivie à chaque cycle</td></tr>
         </table>
-        <p style="font-size:16px">Barre de mérite : en production, les régions devaient avoir <strong>{num(-mon_b[bar_key], 1)} point de cote R de plus</strong> pour être retenues.</p></div>
+        <p style="font-size:17px">En production, les régions devaient avoir <strong>{num(-mon_b[bar_key], 1)} point de cote R de plus</strong> pour être retenues.</p>
+        <p style="font-size:17px"><strong>Choix assumés</strong> : heures = mérite ; revenu neutre (un volet « besoin » relève de l'institution) ; étalon contraint, pas identifié.</p></div>
         <div class="col"><ul style="font-size:19px">
           <li><strong>Une alerte bloque la publication</strong> jusqu'à une revue humaine.</li>
-          <li>Les cas limites (±0,5 point) sont relus <strong>à l'aveugle</strong>, sans région ni revenu.</li>
-          <li><strong>Audit annuel</strong> contre un étalon indépendant de ≈ 300 dossiers.</li>
-          <li><strong>Retour arrière</strong> si l'écart dépasse 0,10 pendant deux cycles.</li>
-          <li><strong>Recours</strong> : score et seuil communiqués, révision humaine (Loi 25, art. 12.1 LPRPSP).</li>
-        </ul></div></div>""",
-
-        f"""<div class="kicker">8 · Limites et choix assumés</div><h2>Nos choix, et ceux qui reviennent à l'institution</h2>
-        <div class="row"><div class="col"><ul>
-          <li><strong>Les heures travaillées comptent comme mérite.</strong> Les sondes le soutiennent (poids compatible : 0,75 à 1,25 fois le nôtre), mais c'est un choix normatif à valider par le comité d'éthique.</li>
-          <li><strong>Le revenu n'est ni un avantage ni un critère de besoin.</strong> Un volet fondé sur le besoin relève de la politique de l'institution.</li>
-          <li><strong>L'étalon est contraint, pas identifié</strong> : seules des mesures agrégées le valident.</li>
-        </ul></div><div class="col"><ul>
-          <li><strong>Deux blocs régionaux</strong> pour l'audit : les 5 régions sont suivies, mais les régions éloignées comptent ≈ 500 dossiers chacune.</li>
-          <li><strong>Intersectionnalité</strong> (1re génération × région) non auditée.</li>
-          <li><strong>Données synthétiques</strong> : les effets réels seront moins nets ; d'où la surveillance continue.</li>
-          <li><strong>Test de stress</strong> sur 5 cohortes futures : l'écart reste faible sans réentraînement, et le moniteur alerte quand le mérite change entre groupes.</li>
+          <li>Cas limites relus <strong>à l'aveugle</strong> ; <strong>audit annuel</strong> indépendant.</li>
+          <li><strong>Recours</strong> : score et seuil communiqués (Loi 25).</li>
+          <li><strong>Test de stress</strong> sur 5 cohortes futures : écart faible, alertes au bon moment.</li>
         </ul>
-        <div class="box" style="margin-top:20px"><div class="formula" style="font-size:26px">Même barre pour tout le monde.</div>
-        <p style="margin:0">Code, audit et règle de décision : tout est reproductible dans le dépôt.</p></div></div></div>""",
+        <div class="box" style="margin-top:14px"><div class="formula" style="font-size:26px">Même barre pour tout le monde.</div></div></div></div>""",
     ]
 
 

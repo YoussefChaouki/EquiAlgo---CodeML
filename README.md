@@ -32,7 +32,7 @@ d'exactitude) reproduisait fidèlement ce comité.
 | [`predictions.csv`](predictions.csv) | 4 000 décisions, `id_candidat,decision_octroi`, taux d'octroi 40,0 % |
 | [`audit_rapport.ipynb`](audit_rapport.ipynb) | Mesure du biais, décomposition, proxys, métrique choisie, identification de l'étalon, sondes, comparaison avec le boosting, gouvernance, test de stress, limites |
 | [`model_corrige.py`](model_corrige.py) | Modèle corrigé, front de Pareto ([`pareto_front.png`](pareto_front.png)), table de robustesse |
-| [`presentation.pdf`](presentation.pdf) | Support du pitch de 5 minutes (9 slides), script oral dans [`presentation/pitch_script.md`](presentation/pitch_script.md) |
+| [`presentation.pdf`](presentation.pdf) | Support du pitch de 5 minutes (6 slides), script oral dans [`presentation/pitch_script.md`](presentation/pitch_script.md) |
 
 ## Reproduire
 
