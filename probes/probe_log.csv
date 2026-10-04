@@ -1,0 +1,13 @@
+probe,n_granted,rate,hypothesis,hx_accuracy,hx_f1_macro
+P00a_all_ones,4000,1.0,acc = reference prevalence,0.3993,0.2853
+P00b_ones_remote_only,1628,0.407,acc = (A_remote + n_centre - A_centre) / N,0.5173,0.4984
+P01_r_hours_hat,1600,0.4,merit = R + 0.146 x hours (committee weight),0.9463,0.944
+P03_r_only,1600,0.4,merit = R score alone,,
+P04_r_hours_x1.5,1600,0.4,hours weight 50 % higher,,
+P05_r_hours_x0.5,1600,0.4,hours weight 50 % lower,,
+P06_plus_income,1600,0.4,income is merit (committee minus region),,
+P07_need_based,1600,0.4,need-based: lower income favoured,,
+P08_first_gen,1600,0.4,first-generation bonus of 1 R point,,
+P09_r_hours_x2,1600,0.4,hours weight doubled,,
+P10_need_no_hours,1600,0.4,"need-based, hours not merit",,
+P02_baseline_rf,1562,0.3905,production model; anchors the utility scale,,
