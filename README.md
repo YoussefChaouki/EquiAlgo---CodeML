@@ -1,85 +1,91 @@
-# ÉquiAlgo : le mérite n'a pas de code postal
+# ÉquiAlgo: merit has no postal code
 
-Équipe **Persona** · Hackathon Génie et Informatique 2026 · défi IVADO ÉquiAlgo.
-Les consignes originales sont dans [`docs/`](docs/).
+🇫🇷 [Version française](README.fr.md)
 
-## En une minute
+Bias audit and correction of a scholarship-allocation model. Team **Persona** · Hackathon Génie
+et Informatique 2026 · IVADO ÉquiAlgo challenge. The original challenge instructions are in
+[`docs/`](docs/).
 
-Le comité historique accordait une bourse à **48 %** des candidat·es de Montréal et de la
-Capitale-Nationale, contre **27 %** en régions éloignées. Le modèle en production (88 %
-d'exactitude) reproduisait fidèlement ce comité.
+## In one minute
 
-- **Diagnostic.** À dossier égal, vivre en région éloignée coûte **1,4 point de cote R**.
-  L'écart de 21 points se décompose en **74 % de pénalité régionale directe**, **23 %
-  d'avantage aux revenus élevés** et **3 % de mérite**. Retirer la colonne région ne suffit pas :
-  code postal (AUC 1,00), distance (1,00), heures (0,80) et revenu (0,68) la reconstituent.
-- **Correction.** On modélise le comité, on sépare son mérite (cote R + 0,146 × heures
-  travaillées) de son biais (région, revenu), puis on accorde la bourse aux **40 %** les mieux
-  classés sur le mérite seul. Il n'y a qu'**un seul paramètre estimé**, et la règle est
-  explicable et reproductible.
-- **Validation.** Trois soumissions HxBuddy agrégées, selon une règle écrite **avant** de
-  soumettre ([`probes/DECISION_RULE.md`](probes/DECISION_RULE.md)). Le mérite réel est réparti
-  également (40,05 % au centre, 39,74 % en région). Notre soumission obtient **94,63 %
-  d'exactitude et 94,4 % de F1 macro** contre ce mérite.
-- **Gouvernance.** [`monitoring.py`](monitoring.py) produit un rapport d'équité à chaque cycle
-  d'octroi. Il aurait levé 3 alertes sur le modèle de production : en production, les régions
-  devaient franchir une barre plus haute de 1,5 point de cote R.
+The historical committee awarded a scholarship to **48 %** of applicants from Montréal and the
+Capitale-Nationale, against **27 %** in remote regions. The model in production (88 % accuracy)
+faithfully reproduced that committee.
 
-## Livrables
+- **Diagnosis.** For an equal file, living in a remote region costs **1.4 points of R-score**
+  (the Quebec college grade index). The 21-point gap breaks down into **74 % direct regional
+  penalty**, **23 % advantage to high incomes** and **3 % merit**. Dropping the region column is
+  not enough: postal code (AUC 1.00), distance (1.00), hours worked (0.80) and income (0.68)
+  reconstruct it.
+- **Correction.** We model the committee, separate its merit (R-score + 0.146 × hours worked)
+  from its bias (region, income), then award the scholarship to the top **40 %** ranked on merit
+  alone. There is **a single estimated parameter**, and the rule is explainable and
+  reproducible.
+- **Validation.** Three aggregated submissions to the challenge scorer (HxBuddy), following a
+  rule written **before** submitting ([`probes/DECISION_RULE.md`](probes/DECISION_RULE.md)).
+  True merit is evenly distributed (40.05 % in the centre, 39.74 % in the regions). Our
+  submission reaches **94.63 % accuracy and 94.4 % macro F1** against that merit.
+- **Governance.** [`monitoring.py`](monitoring.py) produces a fairness report at every award
+  cycle. It would have raised 3 alerts on the production model: in production, the regions had
+  to clear a bar 1.5 R-score points higher.
 
-| Fichier | Contenu |
+## Deliverables
+
+| File | Content |
 |---|---|
-| [`predictions.csv`](predictions.csv) | 4 000 décisions, `id_candidat,decision_octroi`, taux d'octroi 40,0 % |
-| [`audit_rapport.ipynb`](audit_rapport.ipynb) | Mesure du biais, décomposition, proxys, métrique choisie, identification de l'étalon, sondes, comparaison avec le boosting, gouvernance, test de stress, limites |
-| [`model_corrige.py`](model_corrige.py) | Modèle corrigé, front de Pareto ([`pareto_front.png`](pareto_front.png)), table de robustesse |
-| [`presentation.pdf`](presentation.pdf) | Support du pitch de 5 minutes (6 slides), script oral dans [`presentation/pitch_script.md`](presentation/pitch_script.md) |
+| [`predictions.csv`](predictions.csv) | 4,000 decisions, `id_candidat,decision_octroi`, award rate 40.0 % |
+| [`audit_rapport.ipynb`](audit_rapport.ipynb) | Bias measurement, decomposition, proxies, chosen metric, identification of the reference, probes, comparison with boosting, governance, stress test, limits (in French) |
+| [`model_corrige.py`](model_corrige.py) | Corrected model, Pareto front ([`pareto_front.png`](pareto_front.png)), robustness table |
+| [`presentation.pdf`](presentation.pdf) | Slides of the 5-minute pitch (6 slides, in French), speaker script in [`presentation/pitch_script.md`](presentation/pitch_script.md) |
 
-## Reproduire
+The files sit at the repository root because that is the layout the challenge asked for.
 
-Python 3.10+. Les données du ZIP officiel doivent être dans `data/`
-(`donnees_demandes.csv`, `candidats_evaluation.csv`).
+## Reproduce
+
+Python 3.10+. The data from the official ZIP must be in `data/`
+(`donnees_demandes.csv`, `candidats_evaluation.csv`); it is not redistributed here.
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-python model_corrige.py                 # predictions.csv + front de Pareto (~30 s)
-python -m pytest tests -q               # 8 tests : budget, format, métriques, décodeur, moniteur
+python model_corrige.py                 # predictions.csv + Pareto front (~30 s)
+python -m pytest tests -q               # 8 tests: budget, format, metrics, decoder, monitor
 jupyter nbconvert --to notebook --execute --inplace audit_rapport.ipynb   # ~1 min
-python monitoring.py predictions.csv    # rapport de surveillance d'un cycle
-python presentation/build_presentation.py   # régénère presentation.pdf (Google Chrome requis)
+python monitoring.py predictions.csv    # monitoring report for one cycle
+python presentation/build_presentation.py   # regenerates presentation.pdf (needs Google Chrome)
 ```
 
-Toutes les graines aléatoires sont fixées. `predictions.csv` est identique octet pour octet à
-la sonde `probes/files/P01_r_hours_hat.csv`, qu'on régénère avec `python probes/make_probes.py`.
+All random seeds are fixed. `predictions.csv` is byte-for-byte identical to the probe
+`probes/files/P01_r_hours_hat.csv`, which `python probes/make_probes.py` regenerates.
 
-## Structure
+## Layout
 
 ```
-common.py              données, groupes, modèle du comité, score de mérite, métriques, budget
-model_corrige.py       décision corrigée + front de Pareto + robustesse
-monitoring.py          indicateurs de surveillance par cycle (sans étiquettes) et seuils
-audit_rapport.ipynb    rapport d'audit complet
-probes/                sondes HxBuddy : génération, décodage, règle pré-enregistrée, journal
-presentation/          génération du PDF du pitch et script oral
-tests/                 tests pytest
-docs/                  consignes officielles du défi
+common.py              data, groups, committee model, merit score, metrics, budget
+model_corrige.py       corrected decision + Pareto front + robustness
+monitoring.py          per-cycle monitoring indicators (label-free) and thresholds
+audit_rapport.ipynb    full audit report
+probes/                HxBuddy probes: generation, decoding, pre-registered rule, log
+presentation/          pitch PDF generation and speaker script
+tests/                 pytest tests
+docs/                  official challenge instructions
 ```
 
-## Choix assumés et limites
+## Stated choices and limits
 
-- **Métrique :** égalité des chances, mesurée **contre un mérite** et jamais contre les décisions
-  du comité. Ici, elle entraîne de fait la parité, puisque le mérite est réparti également.
-- **Choix normatifs :** les heures travaillées comptent comme du mérite. Le revenu n'est ni un
-  avantage ni un critère de besoin ; un volet fondé sur le besoin relève de l'institution.
-- **L'étalon est contraint, pas identifié.** Les sondes excluent les hypothèses concurrentes
-  testées, mais un poids des heures de 0,75 à 1,25 fois le nôtre reste compatible. Notre écart
-  résiduel serait alors d'environ 0,03 au plus.
-- Audit en deux blocs régionaux ; intersectionnalité non auditée ; données synthétiques.
+- **Metric:** equal opportunity, measured **against a merit** and never against the committee's
+  decisions. Here it implies parity in practice, since merit is evenly distributed.
+- **Normative choices:** hours worked count as merit. Income is neither an advantage nor a
+  need criterion; a need-based component is the institution's call.
+- **The reference is constrained, not identified.** The probes rule out the competing
+  hypotheses we tested, but a weight on hours of 0.75 to 1.25 times ours remains compatible.
+  Our residual gap would then be about 0.03 at most.
+- Audit over two regional blocks; intersectionality not audited; synthetic data.
 
-## Outils
+## Tools
 
 Python, pandas, NumPy, scikit-learn, statsmodels, fairlearn (ThresholdOptimizer,
-ExponentiatedGradient, comme points de comparaison), matplotlib, Jupyter, pytest. Le
-développement a été assisté par un assistant de code IA (Claude Code) ; l'analyse, les choix et
-les livrables ont été relus et validés par l'équipe.
+ExponentiatedGradient, as comparison points), matplotlib, Jupyter, pytest. Development was
+assisted by an AI coding assistant (Claude Code); the analysis, the choices and the deliverables
+were reviewed and validated by the team.
